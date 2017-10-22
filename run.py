@@ -13,6 +13,10 @@ def urlValid(url):
 		return False
 	return True
 
+#Init configuration variables
+page = 1
+url_root = ""
+
 
 ## Init things from files 
 hg = HomeGetter("Homes.db") 
@@ -20,15 +24,16 @@ hg = HomeGetter("Homes.db")
 #Config file
 with open("config.json","r") as file:
 	config = json.load(file)
-if urlValid(config["url"]):
+if "url" in config:
 	url_root = config["url"]
-else: 
-	print("Not valid url")
+
+if "startPage" in config:
+	page = config["startPage"]
 
 
-
-page = 1
-
+if not urlValid(url_root):
+	print("Not valid URL")
+	exit()
 
 
 while True:
@@ -42,9 +47,14 @@ while True:
 	
 
 	#Todo make this a more logical check. 
-	if type(return_status) == bool:  
-		print("Failed to interpret in GetListingPage()")
+	if type(return_status) == str:  
+		print(return_status)
 		break
+
+	#Nothing new? Exit! 
+	if type(return_status) == int and return_status == 0:
+		print("zero houses added. Exiting")
+		exit() 
 
 	page += 1
 

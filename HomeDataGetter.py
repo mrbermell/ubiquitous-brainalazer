@@ -38,8 +38,6 @@ class HtmlInterpretter:
 		r = r.replace(",",".")
 		return r
 
-
-
 	def CompleteParse(bs):
 		item = {}
 
@@ -49,26 +47,27 @@ class HtmlInterpretter:
 				continue
 			
 			value = tag.getText().strip()
-			
 			if value == "":
 				continue
 
 			if len(operation) == 4:
 				value = HtmlInterpretter.clearLine(value)
-				value = operation[3](value)
-			
-			item[operation[2]] = value
+				try: 
+					value = operation[3](value)
+				except:
+					print("Couldn't apply", operation[3], "to",value)
 
+			item[operation[2]] = value
 		return item
 
 class HomeGetter(object):
 	"""docstringbject HomeGetter"""
 	def __init__(self,database):
 		self.db = TinyDB(database)
-		pass
 
 	def __DB_insert(self, item):
-		#Check for duplicates and insert if there are none
+		"""Check for duplicates and insert if there are none"""
+
 		s=Query()
 		same_url_items = self.db.search(s.url == item["url"])
 		if not same_url_items: #no items with same url
@@ -78,41 +77,39 @@ class HomeGetter(object):
 			return False
 
 	def GetListingPage(self, url= "", file=""):
-
-
 		if url:
 			http = urllib3.PoolManager()
 			r = http.request('GET', url) 
 			soup = BeautifulSoup(r.data, 'html.parser')
 		elif file:   
-			f = open(file,"r")
-			data = f.read()
-			f.close()
-			soup = BeautifulSoup(data, 'html.parser')
+			with open(file,"r") as f:
+				soup = BeautifulSoup(f.read(), 'html.parser')
+			url = "www.nolink.com" 
+
 		else: #No argument passed
-			print("lol")
-			return False
-		
+			return("No argument passed to GetListingPage()")
+			
 		resultDiv = soup.find("div",{"id":"result"})
 
 		if resultDiv == None: 
-			print("lol2")
-			return False
-
+			return("Couldn't find 'Results div'")
+			
 		Houses = resultDiv.findAll("li", {"class": "results__normal-item"})
 		
-		parsed_uri = urlparse( url )
-		url_root = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
+		parsed_url = urlparse( url )
+		url_root = '{url.scheme}://{url.netloc}'.format(url=parsed_url)
 
 		inserted = 0
 
 		for house in Houses:
 			item = HtmlInterpretter.CompleteParse(house)
-			a_tag = house.find("a",{"class": "item-link-container"})
+			url_tag = house.find("a",{"class": "item-link-container"})
 			
-			if item and a_tag: #is not empty dict
-				item["url"] = url_root + a_tag.get("href")
-				self.__DB_insert(item)
-				inserted += 1
+			if item and url_tag: #is not empty dict or empty url_tag
+				item["url"] = url_root + url_tag.get("href")
+				
+				return_status = self.__DB_insert(item)
+				if return_status:
+					inserted += 1
 
 		return inserted

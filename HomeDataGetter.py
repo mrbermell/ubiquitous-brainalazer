@@ -27,12 +27,10 @@ class HtmlInterpretter:
 	
 	replaceTexts=[" ","kr","/","mån","\n","\xa0","m²","rum","biarea"]
 
-	def clearLine(s,replaceTextArray=[]):
+	def clearLine(s):
 		r=s 
-		if not replaceTextArray:
-			replaceTextArray = HtmlInterpretter.replaceTexts
 
-		for replace in replaceTextArray:
+		for replace in HtmlInterpretter.replaceTexts:
 			r = r.replace(replace,"")
 		
 		r = r.replace(",",".")
@@ -67,7 +65,6 @@ class HomeGetter(object):
 
 	def __DB_insert(self, item):
 		"""Check for duplicates and insert if there are none"""
-
 		s=Query()
 		same_url_items = self.db.search(s.url == item["url"])
 		if not same_url_items: #no items with same url
@@ -84,9 +81,9 @@ class HomeGetter(object):
 		elif file:   
 			with open(file,"r") as f:
 				soup = BeautifulSoup(f.read(), 'html.parser')
-			url = "www.nolink.com" 
+			url = "http://www.nolink.com" 
 
-		else: #No argument passed
+		else: 
 			return("No argument passed to GetListingPage()")
 			
 		resultDiv = soup.find("div",{"id":"result"})
@@ -97,7 +94,7 @@ class HomeGetter(object):
 		Houses = resultDiv.findAll("li", {"class": "results__normal-item"})
 		
 		parsed_url = urlparse( url )
-		url_root = '{url.scheme}://{url.netloc}'.format(url=parsed_url)
+		url_root = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_url)
 
 		inserted = 0
 

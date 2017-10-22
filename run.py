@@ -46,6 +46,9 @@ while True:
 
 	page += 1
 
-	sleep_seconds = randint(5,50) 
+	sleep_seconds = randint(5,15) 
 	print("Added", return_status," houses. Sleeping", sleep_seconds,"s.")
+	config["startPage"] = page
+	with open("config.json","w") as file:
+		json.dump(config,file)
 	sleep(sleep_seconds)

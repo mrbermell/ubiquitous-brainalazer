@@ -61,8 +61,3 @@ while True:
 	sleep_seconds = randint(5,50) 
 	print("Added", return_status," houses. Sleeping", sleep_seconds,"s.")
 	sleep(sleep_seconds)
-
-
-#Get first page
-
-#Do the while loop 

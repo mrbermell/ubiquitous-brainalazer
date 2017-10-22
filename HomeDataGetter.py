@@ -8,81 +8,58 @@ from tinydb import TinyDB, Query
 from urllib.parse import urlparse
 
 
+#print("{:,}".format(value))
+
+
 class HtmlInterpretter: 
-	def clearBlanks(s):
-		res = ""
-		for line in s.splitlines():
-			if not line.isspace() and not line =="":
-				res += line.strip() + "\n"
-		return res.strip()	
-
-	def PriceText(item, bs):
 	
-		lines = HtmlInterpretter.clearBlanks(bs.getText()).splitlines()
+	parseArray = [	["li",{"class":"price"},"price",int],
+					["li",{"class":"fee"},"fee",int],
+					["h2",{"class":"property-address"},"address"],
+					["h2",{"class":"friendly-property-type--mobile-only"},"type"],
+					["li",{"class":"city"},"city"],
+					["li",{"class":"area"},"area"],
+					["li",{"class":"living-area"},"living-area",float],
+					["li",{"class":"rooms"},"rooms",float],
+					["li",{"class":"supplemental-area"},"sup-area",float],
+					["li",{"class":"price-per-m2"},"price-per-m2",int]]
+					#["a" ,{"class":"item-link-container"},"url"]]
+	
+	replaceTexts=[" ","kr","/","mån","\n","\xa0","m²","rum","biarea"]
 
-		SellPriceeStr = lines[0]
-		SellPriceeStr = SellPriceeStr.replace(" ","")
-		SellPriceeStr = SellPriceeStr.replace("kr","")
+	def clearLine(s,replaceTextArray=[]):
+		r=s 
+		if not replaceTextArray:
+			replaceTextArray = HtmlInterpretter.replaceTexts
+
+		for replace in replaceTextArray:
+			r = r.replace(replace,"")
 		
-		try:
-			item["price"] = int(SellPriceeStr)
-		except ValueError:
-			item["price"] = "No price info"
-
-		if len(lines)>1:
-			monthlyStr = lines[1]
-			monthlyStr = monthlyStr.replace(" ","")
-			monthlyStr = monthlyStr.split("kr")[0]
-			item["monthly"] = int(monthlyStr.replace("\xa0",""))
-		
-		return True
-
-	def LocationText(item, bs):
-		s = HtmlInterpretter.clearBlanks(bs.getText())
-		s = s.splitlines()
-		
-		item["address"] = s[2]
-		item["type"] = s[4]
-		item["city"] = s[5]
-		try:
-			item["district"] = s[6]
-		except:
-			item["district"] = "<no district>" 
-		return True
-
-	def Size(item, bs):
-		s = HtmlInterpretter.clearBlanks(bs.getText())
-		s = s.replace(",",".")
-		
-		lines = s.splitlines()
-
-		item["sq meters"] = float(lines[0].split(" ")[0])
-		item["rooms"] = float(lines[1].split(" ")[0])
-
-		# Size of ground plot
-		groundText = [line for line in lines if line.find("tomt")>0 ]
-		if len(groundText):
-			groundText = groundText[0]
-			groundText = groundText.replace(" ","")
-			groundText = groundText.replace("\xa0","")
-			s = ""
-			for c in groundText:
-				if c.isdigit():
-					s += c 
-				else:
-					break 
-
-			item["land area"] = float(s)
-
-			if groundText.find("ha")>0:
-				item["land area"] = item["land area"] * 1e4 
+		r = r.replace(",",".")
+		return r
 
 
-		#size of biarea
-		biAreaText = [line for line in lines if line.find("biarea")>0 ]
-		if len(biAreaText):
-			biAreaText = biAreaText[0]
-			item["biarea"] = float(biAreaText.split(" ")[0])
+
+	def CompleteParse(bs):
+		item = {}
+
+		for operation in HtmlInterpretter.parseArray:
+			tag = bs.find(operation[0], operation[1])
+			if tag == None:
+				continue
+			
+			value = tag.getText().strip()
+			
+			if value == "":
+				continue
+
+			if len(operation) == 4:
+				value = HtmlInterpretter.clearLine(value)
+				value = operation[3](value)
+			
+			item[operation[2]] = value
+
+		return item
 
 class HomeGetter(object):
 	"""docstringbject HomeGetter"""
@@ -92,40 +69,13 @@ class HomeGetter(object):
 
 	def __DB_insert(self, item):
 		#Check for duplicates and insert if there are none
-		
+		s=Query()
 		same_url_items = self.db.search(s.url == item["url"])
 		if not same_url_items: #no items with same url
 			self.db.insert(item)
 			return True
 		else:
 			return False
-		
-
-	def ParseHtml(self,li_tag,url_root):
-		dict_item = {}
-
-		try: 
-			#Link, 
-			dict_item["url"] = url_root + li_tag.find("a",{"class": "item-link-container"}).get("href")
-
-			#price and monthly
-			priceContainer = li_tag.find("ul", {"class": "attributes prices"})
-			HtmlInterpretter.PriceText(dict_item, priceContainer)
-
-			# Location 
-			locationContainer = li_tag.find("ul", {"class": "location-type"})
-			HtmlInterpretter.LocationText(dict_item, locationContainer)
-
-			# Size 
-			sizeContainer = li_tag.find("ul", {"class": "size"})
-			HtmlInterpretter.Size(dict_item, sizeContainer)
-
-		except Exception as e:
-			print("-"*20, HtmlInterpretter.clearBlanks(house.getText()))
-			print("CAUGHT UNHANDLED ERROR:", type(e))
-			exit()
-
-		return dict_item
 
 	def GetListingPage(self, url= "", file=""):
 
@@ -134,19 +84,19 @@ class HomeGetter(object):
 			http = urllib3.PoolManager()
 			r = http.request('GET', url) 
 			soup = BeautifulSoup(r.data, 'html.parser')
-		
-		if file:   
-			f = open("example_firstpage.html","r")
+		elif file:   
+			f = open(file,"r")
 			data = f.read()
 			f.close()
 			soup = BeautifulSoup(data, 'html.parser')
-		
 		else: #No argument passed
+			print("lol")
 			return False
 		
 		resultDiv = soup.find("div",{"id":"result"})
 
 		if resultDiv == None: 
+			print("lol2")
 			return False
 
 		Houses = resultDiv.findAll("li", {"class": "results__normal-item"})
@@ -154,16 +104,15 @@ class HomeGetter(object):
 		parsed_uri = urlparse( url )
 		url_root = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
 
+		inserted = 0
+
 		for house in Houses:
-			item = self.ParseHtml(house, url_root)
-			if item: #is not empty dict
-				self.__DB_insert(item)
-		
-		return True
-
-
-
-
+			item = HtmlInterpretter.CompleteParse(house)
+			a_tag = house.find("a",{"class": "item-link-container"})
 			
+			if item and a_tag: #is not empty dict
+				item["url"] = url_root + a_tag.get("href")
+				self.__DB_insert(item)
+				inserted += 1
 
-
+		return inserted

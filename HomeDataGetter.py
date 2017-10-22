@@ -6,13 +6,14 @@ from time import sleep
 import urllib3
 from tinydb import TinyDB, Query
 from urllib.parse import urlparse
+from django.core.validators import URLValidator
 
-
-#print("{:,}".format(value))
+#TODO: 
+# make price interpreter able to handle "fr.". Probably can't just replace. 
 
 
 class HtmlInterpretter: 
-	
+	"""docstringbject HtmlInterpretter"""
 	parseArray = [	["li",{"class":"price"},"price",int],
 					["li",{"class":"fee"},"fee",int],
 					["h2",{"class":"property-address"},"address"],
@@ -26,6 +27,14 @@ class HtmlInterpretter:
 					#["a" ,{"class":"item-link-container"},"url"]]
 	
 	replaceTexts=[" ","kr","/","mån","\n","\xa0","m²","rum","biarea"]
+
+	def urlValid(url):
+		urlValid = URLValidator()
+		try:
+			urlValid(url)
+		except:
+			return False
+		return True
 
 	def clearLine(s):
 		r=s 

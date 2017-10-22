@@ -1,22 +1,11 @@
-from HomeDataGetter import HomeGetter
-from django.core.validators import URLValidator
+from HomeDataGetter import HomeGetter, HtmlInterpretter
 import json
 from time import sleep
 from random import randint
 
-
-def urlValid(url):
-	urlValid = URLValidator()
-	try:
-		urlValid(url)
-	except:
-		return False
-	return True
-
 #Init configuration variables
 page = 1
 url_root = ""
-
 
 ## Init things from files 
 hg = HomeGetter("Homes.db") 
@@ -30,12 +19,12 @@ if "url" in config:
 if "startPage" in config:
 	page = config["startPage"]
 
-
-if not urlValid(url_root):
+if not HtmlInterpretter.urlValid(url_root):
 	print("Not valid URL")
 	exit()
 
 
+# Main loop
 while True:
 	if page == 1:
 		url = url_root
@@ -45,7 +34,6 @@ while True:
 	print("Getting:", url)
 	return_status = hg.GetListingPage(url=url)		
 	
-
 	#Todo make this a more logical check. 
 	if type(return_status) == str:  
 		print(return_status)

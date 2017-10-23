@@ -77,16 +77,6 @@ class HomeGetter(object):
 	def URL_already_in_DB(self,url):
 		return url in self.urls
 
-	def __DB_insert(self, item):
-		"""Check for duplicates and insert if there are none"""
-		
-		if item["url"] in self.urls: 
-			return False
-		else:
-			self.db.insert(item)
-			self.urls.append(item["url"])
-			return True
-
 	def GetListingPage(self, url= "", file=""):
 		if url:
 			http = urllib3.PoolManager()
@@ -110,7 +100,7 @@ class HomeGetter(object):
 		parsed_url = urlparse( url )
 		url_root = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_url)
 
-		items = []
+		unique_entries = []
 		inserted = 0
 
 		for house in Houses:
@@ -123,8 +113,8 @@ class HomeGetter(object):
 				if not self.URL_already_in_DB( item["url"] ):
 					self.urls.append( item["url"] )
 					inserted += 1
-					items.append(item)
+					unique_entries.append(item)
 		
-		self.db.insert_multiple( items )
+		self.db.insert_multiple( unique_entries )
 
 		return inserted

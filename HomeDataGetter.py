@@ -9,7 +9,8 @@ from urllib.parse import urlparse
 from django.core.validators import URLValidator
 
 #TODO: 
-# make price interpreter able to handle "fr.". Probably can't just replace. 
+# Implement ways to handle 'New productions' with "fr. <price>" and 'X-Y rooms' etc. 
+# Implement usage of insert_multiple() instead of insert. 
 
 
 class HtmlInterpretter: 
@@ -26,7 +27,7 @@ class HtmlInterpretter:
 					["li",{"class":"price-per-m2"},"price-per-m2",int]]
 					#["a" ,{"class":"item-link-container"},"url"]]
 	
-	replaceTexts=[" ","kr","/","mån","\n","\xa0","m²","rum","biarea"]
+	replaceTexts = [" ","kr","/","mån","\n","\xa0","m²","rum","biarea"]
 
 	def urlValid(url):
 		urlValid = URLValidator()
@@ -71,16 +72,20 @@ class HomeGetter(object):
 	"""docstringbject HomeGetter"""
 	def __init__(self,database):
 		self.db = TinyDB(database)
+		self.urls = [ item["url"] for item in self.db.all() ]  
+
+	def URL_already_in_DB(self,url):
+		return url in self.urls
 
 	def __DB_insert(self, item):
 		"""Check for duplicates and insert if there are none"""
-		s=Query()
-		same_url_items = self.db.search(s.url == item["url"])
-		if not same_url_items: #no items with same url
-			self.db.insert(item)
-			return True
-		else:
+		
+		if item["url"] in self.urls: 
 			return False
+		else:
+			self.db.insert(item)
+			self.urls.append(item["url"])
+			return True
 
 	def GetListingPage(self, url= "", file=""):
 		if url:
@@ -105,6 +110,7 @@ class HomeGetter(object):
 		parsed_url = urlparse( url )
 		url_root = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_url)
 
+		items = []
 		inserted = 0
 
 		for house in Houses:
@@ -114,8 +120,11 @@ class HomeGetter(object):
 			if item and url_tag: #is not empty dict or empty url_tag
 				item["url"] = url_root + url_tag.get("href")
 				
-				return_status = self.__DB_insert(item)
-				if return_status:
+				if not self.URL_already_in_DB( item["url"] ):
+					self.urls.append( item["url"] )
 					inserted += 1
+					items.append(item)
+		
+		self.db.insert_multiple( items )
 
 		return inserted

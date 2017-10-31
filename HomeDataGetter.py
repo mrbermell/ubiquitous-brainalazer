@@ -15,17 +15,18 @@ from django.core.validators import URLValidator
 
 class HtmlInterpretter: 
 	"""docstringbject HtmlInterpretter"""
-	parseArray = [	["li",{"class":"price"},"price",int],
-					["li",{"class":"fee"},"fee",int],
-					["h2",{"class":"property-address"},"address"],
-					["h2",{"class":"friendly-property-type--mobile-only"},"type"],
-					["li",{"class":"city"},"city"],
-					["li",{"class":"area"},"area"],
-					["li",{"class":"living-area"},"living-area",float],
-					["li",{"class":"rooms"},"rooms",float],
-					["li",{"class":"supplemental-area"},"sup-area",float],
-					["li",{"class":"price-per-m2"},"price-per-m2",int]]
-					#["a" ,{"class":"item-link-container"},"url"]]
+	parseArray = [	
+		["li",{"class":"price"},	"price",int],
+		["li",{"class":"fee"},		"fee",int],
+		["h2",{"class":"property-address"},		"address"],
+		["li",{"class":"friendly-property-type--mobile-only"},	"type"],
+		["li",{"class":"city"},		"city"],
+		["li",{"class":"area"},		"area"],
+		["li",{"class":"living-area"},			"living-area",float],
+		["li",{"class":"rooms"},				"rooms",float],
+		["li",{"class":"supplemental-area"},	"sup-area",float],
+		["li",{"class":"price-per-m2"},			"price-per-m2",int]]
+		#["a" ,{"class":"item-link-container"},"url"]]
 	
 	replaceTexts = [" ","kr","/","mån","\n","\xa0","m²","rum","biarea"]
 

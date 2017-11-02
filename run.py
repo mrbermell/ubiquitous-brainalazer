@@ -52,3 +52,7 @@ while True:
 	with open("config.json","w") as file:
 		json.dump(config,file)
 	sleep(sleep_seconds)
+
+with open("config.json","w") as file:
+	config["startPage"] = 1
+	json.dump(config,file)
